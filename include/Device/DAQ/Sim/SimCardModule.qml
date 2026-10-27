@@ -15,57 +15,8 @@ ModulePage {
     property url saveDir: acquisitionParameters.saveDirDefault
     property bool save: false
     sections: [connectionSection, acquisitionSection].filter(item => item !== null)
-    mainPages: [
-        Page {
-            title: qsTr("功率谱 3D")
-            contentItem: SurfaceView {
-                id: surface
-                specification: internals.chartParameters.plotConfiguration
-                Connections {
-                    target: internals.device
-                    function onSpecReady(values) { surface.updateSpectrum(values) }
-                }
-            }
-        },
-        Page {
-            title: qsTr("风速 | CNR")
-            contentItem: Wind2DView {
-                id: wind
-                specification: internals.chartParameters.plotConfiguration
-                Connections {
-                    target: internals.device
-                    function onWsReady(values) { wind.updateWS(values) }
-                    function onCnrReady(values) { wind.updateCNR(values) }
-                }
-            }
-        },
-        Page {
-            title: qsTr("风羽图")
-            contentItem: WindBarbItem {
-                id: barb
-                readonly property var spec: internals.chartParameters.plotConfiguration
-                configuration: ({ heightBins: spec.rows, maxHeight: spec.rows * spec.gateSpacing,
-                    windowSeconds: spec.barbWindow, columnSeconds: spec.barbColumn })
-                Connections {
-                    target: internals.device
-                    function onProfileReady(profile) { barb.appendColumn(profile) }
-                }
-            }
-        },
-        Page {
-            title: qsTr("风场真值")
-            contentItem: WindBarbItem {
-                id: truth
-                objectName: "truthChart"
-                configuration: internals.chartParameters.truthConfiguration
-                Connections {
-                    target: internals.device
-                    function onTruthReady(profile) { truth.appendColumn(profile) }
-                }
-                Component.onCompleted: internals.device.publishTruth()
-            }
-        }
-    ]
+    mainPages: plots.pages
+    SimCardPlots { id: plots; device: internals.device }
     readonly property Section connectionSection: SimCardField {
         device: internals.device
     }
@@ -93,7 +44,6 @@ ModulePage {
 
     QtObject {
         id: internals
-        readonly property var chartParameters: device.chartParameters()
         readonly property SimCardDevice device: root.SimCardDevice
     }
     Connections {

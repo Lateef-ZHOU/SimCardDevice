@@ -7,6 +7,7 @@
 #include <numbers>
 #include <random>
 #include <QObject>
+#include <QtQml/qqmlregistration.h>
 #include <QString>
 #include <QStringList>
 
@@ -33,6 +34,8 @@
 class WindFieldSource final : public QObject
 {
     Q_OBJECT
+    QML_ANONYMOUS
+    QML_UNCREATABLE("由虚拟采集卡持有")
     Q_PROPERTY(QStringList kinds READ kinds CONSTANT)
     Q_PROPERTY(int kind READ kind WRITE setKind NOTIFY changed)
     Q_PROPERTY(double speed READ speed WRITE setSpeed NOTIFY changed)             // 地面风速（m/s）
@@ -55,7 +58,7 @@ class WindFieldSource final : public QObject
 public:
     using Clock = std::chrono::steady_clock;
 
-    explicit WindFieldSource(QObject *parent = nullptr) : QObject(parent), since_(Clock::now()) {}
+    explicit WindFieldSource(QObject *parent) : QObject(parent), since_(Clock::now()) {}
 
     [[nodiscard]] static QStringList kinds() { return {QStringLiteral("匀强"), QStringLiteral("线性剪切")}; }
     [[nodiscard]] static QStringList temporalKinds()

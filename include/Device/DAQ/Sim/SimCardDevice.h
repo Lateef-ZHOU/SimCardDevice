@@ -48,7 +48,7 @@ class SimCardDevice final
     Q_PROPERTY(QVariantList mountOptions READ mountOptions NOTIFY mountOptionsChanged)
     Q_PROPERTY(int mount READ mount WRITE setMount NOTIFY mountChanged)
     // ── 场景：风场源是对象（页面直接编辑它），其余是数 ──
-    Q_PROPERTY(QObject *field READ fieldSource CONSTANT)
+    Q_PROPERTY(WindFieldSource *field READ fieldSource CONSTANT)
     Q_PROPERTY(double cnrAt1km READ cnrAt1km WRITE setCnrAt1km NOTIFY sceneChanged)
     Q_PROPERTY(double extinction READ extinction WRITE setExtinction NOTIFY sceneChanged)
     Q_PROPERTY(double overlapRange READ overlapRange WRITE setOverlapRange NOTIFY sceneChanged)
@@ -72,6 +72,8 @@ public:
     {
         if (const auto profile = slot_.latest()) Q_EMIT truthReady(profile);
     }
+    // JSON 配置一次写完后，立即把完整场景纳入采样历史。
+    Q_INVOKABLE void captureScene() { onTick(); }
     using Mounts = std::vector<std::reference_wrapper<GMBDeviceBase>>;
 
     // mounts = 可以架上去的云台（装配根交，次序即页面次序）；出生选中虚拟云台（没有就选第一台），连接时才架上去起采样器。
@@ -158,7 +160,7 @@ public:
                                              .arg(mounts_[i].get().device().displayName(), mounts_[i].get().device().subtitle()));
         Q_EMIT mountChanged();
     }
-    [[nodiscard]] QObject *fieldSource() { return &field_; }
+    [[nodiscard]] WindFieldSource *fieldSource() { return &field_; }
     [[nodiscard]] double cnrAt1km() const noexcept { return det_.cnrAt1kmDb; }
     [[nodiscard]] double extinction() const noexcept { return det_.extinctionDbPerKm; }
     [[nodiscard]] double overlapRange() const noexcept { return det_.overlapRangeM; }
@@ -206,12 +208,12 @@ Q_SIGNALS:
 
 public Q_SLOTS:
     // 连接固定所选云台；查询在主线程同步执行，QML 图表消失即缺数据。
-    void open()
+    bool open()
     {
         if (mounts_.empty())
         {
             Q_EMIT this->device().logSource().logMessage(QStringLiteral("没有可架的云台，虚拟采集卡起不来"));
-            return;
+            return false;
         }
         GMBDeviceBase &g = mounts_[mount_].get();
         LidarSimCardHandle::ParamType p;
@@ -221,10 +223,12 @@ public Q_SLOTS:
             if (input.poses.empty() || input.scenes.empty()) return std::nullopt;
             return input;
         };
-        if (this->device().open(p))
+        const bool accepted = this->device().open(p);
+        if (accepted)
             Q_EMIT this->device().logSource().logMessage(QStringLiteral("架在：%1 · %2").arg(g.device().displayName(), g.device().subtitle()));
         else
-            Q_EMIT this->device().logSource().logMessage(QStringLiteral("虚拟采集卡已在运行")); // 同一台已连着：Handle::start 的门卫挡下，什么都不动
+            Q_EMIT this->device().logSource().logMessage(QStringLiteral("虚拟采集卡已在运行")); // 已连接时不改当前请求。
+        return accepted;
     }
     void close() { this->device().close(); }
     void startTest(const int accumSec, const bool save, const QUrl &folder)
@@ -340,7 +344,7 @@ private:
     int mount_ = 0;
 
     // ── 场景设置与主线程历史 ──
-    WindFieldSource field_;
+    WindFieldSource field_{nullptr};
     LidarForward::Detector det_ = defaultDetector();
     LidarForward::Environment env_{SimCardConfig::temperatureDefault};
     LidarForward::Degradation deg_ = defaultDegradation();
