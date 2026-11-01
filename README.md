@@ -34,3 +34,7 @@ MIT，Copyright (c) 2026 周涛（ZHOU TAO）。Qt、libserialport、libpcap/Npc
 simonly 页面接收唯一 GMBDeviceBase gimbal，保留完整风场、探测器、环境及四个图窗，不提供单卡试采、挂载选择或保存设置。两套页面共用 SimWindFields、SimDetectorFields、SimCardPlots。配置应用后 captureScene 同步记录完整场景，再由应用连接；历史查询仍经云台 QML 官邸。field 暴露 WindFieldSource 的实际只读类型，设置和采样机制不变。
 
 [LiDAR_DataACQ-simonly](https://github.com/Lateef-ZHOU/LiDAR_DataACQ-simonly) 通过固定版本装配这些入口，负责 JSON、命令行、设备就绪后启动和系统信号取消。窗口隐藏仍保留历史，不触发实际绘制。测试创建两套真实页面并检查后端唯一性、销毁和精简分区；跨设备的三任务采样与保存由应用集成测试覆盖。
+
+## 资源阶段通知（2026-11-02）
+
+连接采用 HandleCore 的 `connectionChanged(ResourcePhase)`；主动关闭前在所属线程同步发 `AboutToRelease`，完成事件用于回读现状。页面借出已有 `deviceState` 机制对象，不再保存 isOpen/isLocked/holder 的 QML 转交属性；标签通过连接/锁完成阶段回读，不恢复通用 statusChanged。固定依赖已同步；本轮提交尚未推送，验证使用显式本地源码覆盖。

@@ -10,6 +10,6 @@ public:
     using SimCardHandle::SimCardHandle;
     ~LidarSimCardHandle() override { stop(); }
 Q_SIGNALS:
-    void connectionChanged(bool connected) override;
+    void connectionChanged(HandleCore::ResourcePhase connected) override;
     void logMessage(const QString &text) const final;
 };
