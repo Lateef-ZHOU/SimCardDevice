@@ -1,3 +1,4 @@
+add_subdirectory(handle)
 file(GLOB_RECURSE headers "${CMAKE_CURRENT_SOURCE_DIR}/../include/*.h")
 add_executable(SimCardDevice_smoke smoke.cpp)
 target_link_libraries(SimCardDevice_smoke PRIVATE Lidar::SimCardDevice LidarSimCardDeviceplugin

@@ -45,3 +45,23 @@ simonly 页面接收唯一 GMBDeviceBase gimbal，保留完整风场、探测器
 
 
 2026-11-03 验证：Windows Qt 6.11.2 主程序 Release 编译、15 组 QML 检查、跨官邸生命周期和三任务回归 7/7 通过。接口联调使用相邻源码覆盖，新依赖固定为本地提交，尚未推送；未连接实物设备或更新板卡。
+
+## 官邸自有的仿真 Handle（2026-11-03）
+
+Handle、内部协议及其测试由 HandleCore 原样迁回；头文件名与目标名保持，运行、重连、取消及关闭逻辑不变。`handle/` 可独立构建，仅需 Qt Core >= 6.8.3、C++20 与 HandleCore，不依赖 QML。完整官邸仍需上面的 Qt Quick 依赖。
+
+```sh
+cmake -S handle -B build-handle -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="<Qt前缀>"
+cmake --build build-handle --config Release --parallel 4
+ctest --test-dir build-handle -C Release --output-on-failure
+```
+
+本仓库提供 `Lidar::SimCard`；完整官邸构建自动包含该目标及 `tests/handle`。HandleCore 不再提供仿真模块开关。仿真协议仍只用于进程内部，不作为网络协议。
+
+- `Generator` 提供 `using Input = ...` 和 `QByteArray synthesize(quint64 requestId, RxTime begin, RxTime end, const Input &)`。concept 要求默认构造及准确返回类型；Input 可移动即可，合成器无需可复制或移动。合成器按值放在连接中，在工作线程构造、连续使用、销毁，不能每次请求重建；随机数等算法状态随连接保持。重连会建立新的合成器。
+- `SimCardParams<Input>`：`sourceKey` 表示数据源身份，`capture(begin,end)` 在所属线程同步返回 `optional<Input>`。相等比较只看 sourceKey；已连接且同 key 的 start 不替换查询函数，换源用新 key 或先 stop。缺少 capture 在打开时失败；回调所借用的对象必须存活到 stop 返回，输入须自持快照，后台不能回访 UI。
+- 收到 Accumulate 即固定 system_clock 起止窗口，用所属线程单发 PreciseTimer 等待，到点取数；界面忙导致迟到时仍查询原窗口。累积秒数须为 1..INT_MAX/1000。快照移动进绑定原连接 QObject 的排队闭包，worker 调用合成器，非空结果按原请求窗口结束时刻交付。Handle 不认识风场、角度、采样算法或输出谱布局；请求号与具体输出字节的关联由合成器落实。
+- `nullopt` 不启动合成，空 QByteArray 不交付，两者均静默。Stop 仅撤销请求号匹配的待计时请求，旧 Stop 不影响新请求。已经进入后台的工作保持原请求号，可完成交付，由应用 Collector 拒绝过期结果；不新增取消令牌、阻塞取数、超时或排空。
+- 同步关闭先撤 timer/pending，再向原连接队列投递退出并等待工作线程；排队闭包不强持连接、不借新连接。HandleBase 的首连失败、重连、RX/TX 与关闭机制未改。`SimCardWire::Command` 保留原生 POD 布局和 Accumulate/Stop，编解码仅接受 Command 和结果头的 quint64 请求号；它是进程内部协议，不作为跨 ABI 网络协议。
+
+本轮验证：Windows/MSVC/Qt 6.11.2 完整官邸 Release 与独立头编译通过，页面及 Handle CTest 2/2；Qt Core 独立入口 1/1。Linux/GCC 16.2.1/Qt Core 6.8.3 独立入口 1/1，未测 Linux QML 页面或 ARM。主程序生命周期与三任务回归 7/7、Collector 验证 2/2、八秒冒烟通过，两官邸 qmllint 完成并保留既有静态分析提示。证据 build-migration、build-handle 及 Linux ~/.cache/lidar-sim-handle-move-20261103。固定本地 HandleCore 与 TaskCore 提交，联调使用源码覆盖；未推送。
