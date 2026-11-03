@@ -9,7 +9,7 @@ QtObject {
     readonly property var chartParameters: device.chartParameters()
     readonly property list<Page> pages: [
         Page {
-            title: qsTr("功率谱 3D")
+            title: qsTr("功率谱")
             contentItem: SurfaceView {
                 id: surface
                 specification: root.chartParameters.plotConfiguration
@@ -20,7 +20,7 @@ QtObject {
             }
         },
         Page {
-            title: qsTr("风速 | CNR")
+            title: qsTr("径向风")
             contentItem: Wind2DView {
                 id: wind
                 specification: root.chartParameters.plotConfiguration
@@ -32,7 +32,7 @@ QtObject {
             }
         },
         Page {
-            title: qsTr("风羽图")
+            title: qsTr("风廓线")
             contentItem: WindBarbItem {
                 id: barb
                 readonly property var spec: root.chartParameters.plotConfiguration
