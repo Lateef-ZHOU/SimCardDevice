@@ -1,10 +1,10 @@
 #pragma once
-#include "Device/DAQ/Sim/SimCardProcessing.h"
+#include "SimCardProcessing.h"
 #include <QDateTime>
 #include <QtQml/qqmlregistration.h>
-#include "UI/Chart/DAQChartSpecification.h"
-#include "Acquisition/AcqSaver.h"
-#include "Algorithm/Wind/VerticalWindProfile.h"
+#include "DAQChartSpecification.h"
+#include "AcqSaver.h"
+#include "VerticalWindProfile.h"
 #include <algorithm>
 #include <chrono>
 #include <functional>
@@ -20,13 +20,13 @@
 #include <QUrl>
 #include <QVector>
 
-#include "Algorithm/Sim/LidarForward.h"     // Detector / Environment / Degradation
-#include "Algorithm/Wind/RangeGate.h"       // 门 → 斜距：真值列的高度
-#include "Device/DAQ/DAQDevice.h"           // 采集卡族两层
-#include "Device/DAQ/Sim/SimCardRunSide.h"  // 宪法 + 收集器
-#include "Device/DAQ/Sim/WindFieldSource.h" // 虚拟风场源
-#include "Device/GMB/GMBDevice.h"           // GMBDeviceBase：所架云台的连接、身份与退场通知
-#include "Device/Handle/LidarSimCardHandle.h"    // 连接机制：钟 + 采样器
+#include "LidarForward.h"     // Detector / Environment / Degradation
+#include "RangeGate.h"       // 门 → 斜距：真值列的高度
+#include "DAQDevice.h"           // 采集卡族两层
+#include "SimCardRunSide.h"  // 宪法 + 收集器
+#include "WindFieldSource.h" // 虚拟风场源
+#include "GMBDevice.h"           // GMBDeviceBase：所架云台的连接、身份与退场通知
+#include "LidarSimCardHandle.h"    // 连接机制：钟 + 采样器
 
 // 虚拟采集卡：主线程维护场景历史和页面设置，Handle 主线程按固定累积窗取数。
 // 风廓线与真值图共享 const 帧；角度由 QML 创建的 AngleChartItem 独持历史。

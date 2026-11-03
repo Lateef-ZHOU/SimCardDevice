@@ -1,6 +1,6 @@
 #pragma once
 #include <SimCardHandle.h>
-#include "Device/DAQ/Sim/SimSpectrumGenerator.h"
+#include "SimSpectrumGenerator.h"
 
 // 模板执行层与本项目合成器在末端绑定；只补 Qt 通知和同步析构入口。
 class LidarSimCardHandle : public SimCardHandle<SimSpectrumGenerator>

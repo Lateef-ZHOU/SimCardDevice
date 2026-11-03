@@ -65,3 +65,9 @@ ctest --test-dir build-handle -C Release --output-on-failure
 - 同步关闭先撤 timer/pending，再向原连接队列投递退出并等待工作线程；排队闭包不强持连接、不借新连接。HandleBase 的首连失败、重连、RX/TX 与关闭机制未改。`SimCardWire::Command` 保留原生 POD 布局和 Accumulate/Stop，编解码仅接受 Command 和结果头的 quint64 请求号；它是进程内部协议，不作为跨 ABI 网络协议。
 
 本轮验证：Windows/MSVC/Qt 6.11.2 完整官邸 Release 与独立头编译通过，页面及 Handle CTest 2/2；Qt Core 独立入口 1/1。Linux/GCC 16.2.1/Qt Core 6.8.3 独立入口 1/1，未测 Linux QML 页面或 ARM。主程序生命周期与三任务回归 7/7、Collector 验证 2/2、八秒冒烟通过，两官邸 qmllint 完成并保留既有静态分析提示。证据 build-migration、build-handle 及 Linux ~/.cache/lidar-sim-handle-move-20261103。固定本地 HandleCore 与 TaskCore 提交，联调使用源码覆盖；未推送。
+
+## 源码目录（2026-11-03）
+
+公开文件直接放在 `include/`，引用时使用文件名，不再携带原单仓库的业务目录前缀。CMake 目标名称、C++ 类型和 QML 模块名保持不变；使用方须同步更新头文件路径及固定依赖版本。
+
+目录整理验证（2026-11-03）：Windows：公开头独立编译、页面和 Handle 测试 2/2 通过；Linux Qt Core 6.8.3：独立 Handle 构建、CTest 1/1 通过。本轮通过本地源码覆盖验证，固定依赖同步更新到本地提交；尚未推送，不代表已验证远端拉取。

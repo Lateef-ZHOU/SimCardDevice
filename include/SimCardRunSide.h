@@ -7,7 +7,7 @@
 #include <QVector>
 #include <QtEndian>
 
-#include "Device/DAQ/DAQCollector.h"         // DAQCollector / RxTime
+#include "DAQCollector.h"         // DAQCollector / RxTime
 #include <SimCardProtocol.h>     // 命令协议 SimCardWire（收集器编码，句柄解码）
 
 // ============================================================

@@ -1,5 +1,5 @@
 #pragma once
-#include "Device/Base/RxTime.h"
+#include "RxTime.h"
 #include <utility>
 #include <algorithm>
 #include <chrono>
@@ -11,7 +11,7 @@
 #include <QString>
 #include <QStringList>
 
-#include "Algorithm/Sim/WindField.h" // 虚拟风场工厂
+#include "WindField.h" // 虚拟风场工厂
 
 // ============================================================
 // WindFieldSource —— 虚拟风场源：页面上可编辑的风场描述，按时刻交 field() 出一张值类

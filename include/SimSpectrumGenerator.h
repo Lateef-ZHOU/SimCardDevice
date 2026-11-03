@@ -1,5 +1,5 @@
 #pragma once
-#include "Device/Base/RxTime.h"
+#include "RxTime.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -11,8 +11,8 @@
 #include <QByteArray>
 #include <QtEndian>
 #include <SimCardProtocol.h>
-#include "Algorithm/Geometry/GimbalModel.h"
-#include "Algorithm/Sim/LidarForward.h"
+#include "GimbalModel.h"
+#include "LidarForward.h"
 
 // 主项目的采样快照；历史拥有者在主线程取数，后台只读这一份自持输入。
 struct SimSceneSettings
