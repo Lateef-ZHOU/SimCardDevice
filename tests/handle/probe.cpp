@@ -99,8 +99,8 @@ static void windowsAndState()
     });
     int queries = 0, logs = 0;
     QObject::connect(&handle, &ProbeHandle::logMessage, &handle, [&](const QString &) { ++logs; });
-    require(handle.start({}) && until([&] { return !handle.isRunning(); }), "missing capture should fail open");
-    handle.stop();
+    require(handle.open({}) && until([&] { return !handle.isRunning(); }), "missing capture should fail open");
+    handle.close();
     require(!handle.isOpen() && frames == 0, "missing capture created a working connection");
     require(!handle.send(command(Command::Stop, 1)), "offline send accepted");
     RxTime capturedBegin{}, capturedEnd{};
@@ -111,7 +111,7 @@ static void windowsAndState()
         ++queries; capturedBegin = begin; capturedEnd = end;
         Input input; input.value = 42; return input;
     };
-    require(handle.start(params) && until([&] { return handle.isOpen(); }), "open failed");
+    require(handle.open(params) && until([&] { return handle.isOpen(); }), "open failed");
     for (const auto &bad : {QByteArray("short"), command(Command::Stop, 0) + 'x', command(static_cast<Command::Kind>(44), 0),
                            command(Command::Accumulate, 0, 0), command(Command::Accumulate, 0, -1),
                            command(Command::Accumulate, 0, std::numeric_limits<int>::max())})
@@ -139,17 +139,17 @@ static void windowsAndState()
     }
     SimCardParams<Generator::Input> same = params;
     same.capture = [](RxTime, RxTime) -> std::optional<Input> { return {}; };
-    require(!handle.start(same), "same source should not replace capture or reset connection");
-    handle.stop();
+    require(!handle.open(same), "same source should not replace capture or reset connection");
+    handle.close();
     params.capture = [&](RxTime, RxTime) -> std::optional<Input> { ++queries; return {}; };
-    require(handle.start(params) && until([&] { return handle.isOpen(); }), "reopen for missing input");
+    require(handle.open(params) && until([&] { return handle.isOpen(); }), "reopen for missing input");
     QCoreApplication::processEvents();
     const int beforeLogs = logs;
     require(handle.send(command(Command::Accumulate, 14)) && until([&] { return queries == 3; }), "missing input not queried");
     require(frames == 2 && logs == beforeLogs, "missing input not silent");
     params.sourceKey = "source-B";
     params.capture = [&](RxTime, RxTime) -> std::optional<Input> { ++queries; Input input; input.empty = queries == 4; return input; };
-    require(handle.start(params) && until([&] { return handle.isOpen(); }), "changed source failed to reconnect");
+    require(handle.open(params) && until([&] { return handle.isOpen(); }), "changed source failed to reconnect");
     require(handle.send(command(Command::Accumulate, 15)) && until([&] { return queries == 4; }), "empty result capture");
     require(handle.send(command(Command::Accumulate, 16)) && until([&] { return frames == 3; }), "next frame after empty result");
     {
@@ -158,7 +158,7 @@ static void windowsAndState()
                 "reconnect did not reset state, or empty result reset generator");
     }
     require(handle.send(command(Command::Accumulate, 17)), "pending disconnect");
-    handle.stop(); handle.stop();
+    handle.close(); handle.close();
     const int closedQueries = queries;
     QThread::msleep(1050); QCoreApplication::processEvents();
     require(queries == closedQueries && frames == 3, "disconnect retained timer or work");
@@ -178,7 +178,7 @@ static void shutdown()
     params.capture = [&](RxTime, RxTime) -> std::optional<Input> {
         ++queries; Input input; input.entered = &entered; input.release = &release; return input;
     };
-    require(handle->start(params) && until([&] { return handle->isOpen(); }), "blocking open");
+    require(handle->open(params) && until([&] { return handle->isOpen(); }), "blocking open");
     require(handle->send(command(Command::Accumulate, 20)) && until([&] { return entered.available() > 0; }), "generator entry");
     require(handle->send(command(Command::Stop, 20)) && handle->send(command(Command::Accumulate, 21)), "in-flight cancel/retry");
     std::jthread unblock([&] { std::this_thread::sleep_for(50ms); release.release(); });
@@ -190,7 +190,7 @@ static void shutdown()
     {
         CallbackHandle<ProbeHandle> immediate([](const QByteArray &, RxTime) {});
         SimCardParams<Generator::Input> p; p.capture = [](RxTime, RxTime) -> std::optional<Input> { return {}; };
-        require(immediate.start(p), "immediate start"); immediate.stop();
+        require(immediate.open(p), "immediate start"); immediate.close();
         require(!immediate.isOpen() && !immediate.isRunning(), "open/stop did not finish");
     }
 }
