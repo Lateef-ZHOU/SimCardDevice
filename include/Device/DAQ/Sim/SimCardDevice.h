@@ -31,11 +31,30 @@
 // 虚拟采集卡：主线程维护场景历史和页面设置，Handle 主线程按固定累积窗取数。
 // 风廓线与真值图共享 const 帧；角度由 QML 创建的 AngleChartItem 独持历史。
 // 交给 Handle 工作线程的计算输入仅含值与只读帧份额，不捕获页面或设备。
+// Qt 元对象末端：Handle 与 Device 共用一个 QObject；析构先等上传退出。
+class SimCardCore final : public Device<LidarSimCardHandle, SimCardCollector>
+{
+    Q_OBJECT
+    Q_PROPERTY(QString displayName READ displayName CONSTANT)
+    Q_PROPERTY(QString subtitle READ subtitle CONSTANT)
+    Q_PROPERTY(QObject *logSource READ logSourceObject CONSTANT)
+    Q_PROPERTY(bool isOpen READ isOpen)
+    Q_PROPERTY(bool isLocked READ isLocked)
+    Q_PROPERTY(QString holder READ holder)
+public:
+    using Device::Device;
+    ~SimCardCore() override { PreDestruction(); }
+Q_SIGNALS:
+    void lockChanged(HandleCore::ResourcePhase phase) override;
+private:
+    void PreDestruction() noexcept final { Device::PreDestruction(); }
+};
+
 class SimCardDevice final
 #ifdef Q_MOC_RUN
     : public DAQDeviceBase // 模板层继承的族级元对象。
 #else
-    : public DAQDevice<LidarSimCardHandle, SimCardCollector>
+    : public DAQDevice<SimCardCore>
 #endif
 {
     Q_OBJECT
@@ -116,7 +135,7 @@ public:
         if (!gimbal || std::ranges::any_of(mounts_, [&](const auto &m) { return &m.get() == gimbal; })) return;
         mounts_.emplace_back(*gimbal);
         if (object->objectName() == QStringLiteral("SimGimbal")) mount_ = static_cast<int>(mounts_.size()) - 1;
-        connect(&gimbal->device(), &DeviceBase::retiring, this, [this, gimbal] {
+        connect(gimbal->deviceObject(), &QObject::destroyed, this, [this, gimbal] {
             const auto *selected = mounts_.empty() ? nullptr : &mounts_[mount_].get();
             if (selected == gimbal) close();
             std::erase_if(mounts_, [&](const auto &m) { return &m.get() == gimbal; });
