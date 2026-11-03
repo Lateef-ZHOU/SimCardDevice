@@ -35,11 +35,10 @@
 class SimCardCore final : public Device<LidarSimCardHandle, SimCardCollector>
 {
     Q_OBJECT
-    Q_PROPERTY(QString displayName READ displayName CONSTANT)
-    Q_PROPERTY(QString subtitle READ subtitle CONSTANT)
+    Q_PROPERTY(QString displayName MEMBER displayName CONSTANT)
+    Q_PROPERTY(QString subtitle MEMBER subtitle CONSTANT)
     Q_PROPERTY(bool isOpen READ isOpen)
-    Q_PROPERTY(bool isLocked READ isLocked)
-    Q_PROPERTY(QString holder READ holder)
+    Q_PROPERTY(QVariant holder READ qmlHolder)
 public:
     using Device::Device;
     ~SimCardCore() override { PreDestruction(); }
@@ -155,7 +154,7 @@ public:
         for (const auto &m : mounts_)
         {
             const auto &device = m.get().device();
-            options << QVariantMap{{"name", device.displayName()}, {"subtitle", device.subtitle()}};
+            options << QVariantMap{{"name", device.displayName}, {"subtitle", device.subtitle}};
         }
         return options;
     }
@@ -167,7 +166,7 @@ public:
             return;
         if (!this->device().lockMatches({}))
         {
-            Q_EMIT this->device().logMessage(QStringLiteral("设备正被「%1」占用，不能换云台").arg(this->device().holder()));
+            Q_EMIT this->device().logMessage(QStringLiteral("设备正被「%1」占用，不能换云台").arg(this->device().holder().value()));
             return;
         }
         mount_ = i;
@@ -175,7 +174,7 @@ public:
             open();
         else
             Q_EMIT this->device().logMessage(QStringLiteral("架在：%1 · %2（连接时生效）")
-                                             .arg(mounts_[i].get().device().displayName(), mounts_[i].get().device().subtitle()));
+                                             .arg(mounts_[i].get().device().displayName, mounts_[i].get().device().subtitle));
         Q_EMIT mountChanged();
     }
     [[nodiscard]] WindFieldSource *fieldSource() { return &field_; }
@@ -243,7 +242,7 @@ public Q_SLOTS:
         };
         const bool accepted = this->device().open(p);
         if (accepted)
-            Q_EMIT this->device().logMessage(QStringLiteral("架在：%1 · %2").arg(g.device().displayName(), g.device().subtitle()));
+            Q_EMIT this->device().logMessage(QStringLiteral("架在：%1 · %2").arg(g.device().displayName, g.device().subtitle));
         else
             Q_EMIT this->device().logMessage(QStringLiteral("虚拟采集卡已在运行")); // 已连接时不改当前请求。
         return accepted;
