@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include <algorithm>
 #include <chrono>
 #include <atomic>
@@ -86,8 +87,9 @@ private:
     explicit SimCardCollector(const int accumSec, DAQContext context)
         : DAQCollector(std::move(context)), accumSec_(std::clamp(accumSec, SimCardConfig::AccumSecMin, SimCardConfig::AccumSecMax)) {}
 
-    void onFeed(const QByteArray &raw, const RxTime at) override
+    void onFeed(const std::optional<QByteArray> &item, const RxTime at) override
     {
+        const auto &raw = *item;
         if (raw.size() != SimCardWire::headerBytes + SimCardConfig::frameBytes
             || qFromUnaligned<quint64>(raw.constData()) != requestId_)
             return; // 不完整报文或已取消/重试的旧请求：不认

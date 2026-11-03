@@ -88,3 +88,9 @@ ctest --test-dir build-handle -C Release --output-on-failure
 仿真 Handle 验证同步使用 open/close 连接入口；定时器、合成、采集任务及重连关闭行为不变。
 
 Windows 独立 Handle 构建与 CTest 1/1 通过，主程序增量构建和八秒离屏冒烟通过。 依赖固定到相邻本地提交，尚未推送，联调使用源码覆盖。
+
+## 2026-11-04：进料在消费端取值（用户定）
+
+Collector 的 onFeed 接收 optional<QByteArray> 的 const 引用，由本型号解析端取出字节。空输入由 DeviceCore 公共 feed 拦截；请求号、解析及收齐规则不变。
+
+本轮仅本地整理，不推送；集成验证见主程序维护记录。
