@@ -235,7 +235,7 @@ public Q_SLOTS:
             return false;
         }
         GMBDeviceBase &g = mounts_[mount_].get();
-        LidarSimCardHandle::ParamType p;
+        SimCardParams<SimSpectrumGenerator::Input> p;
         p.sourceKey = g.objectName();
         p.capture = [this, &g](const RxTime begin, const RxTime end) -> std::optional<SimSamplingInput> {
             SimSamplingInput input{readAngles(g, begin, end), slot_.recent(begin, end)};
