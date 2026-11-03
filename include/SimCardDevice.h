@@ -37,7 +37,6 @@ class SimCardCore final : public Device<LidarSimCardHandle, SimCardCollector>
     Q_OBJECT
     Q_PROPERTY(QString displayName READ displayName CONSTANT)
     Q_PROPERTY(QString subtitle READ subtitle CONSTANT)
-    Q_PROPERTY(QObject *logSource READ logSourceObject CONSTANT)
     Q_PROPERTY(bool isOpen READ isOpen)
     Q_PROPERTY(bool isLocked READ isLocked)
     Q_PROPERTY(QString holder READ holder)
@@ -168,14 +167,14 @@ public:
             return;
         if (!this->device().lockMatches({}))
         {
-            Q_EMIT this->device().logSource().logMessage(QStringLiteral("设备正被「%1」占用，不能换云台").arg(this->device().holder()));
+            Q_EMIT this->device().logMessage(QStringLiteral("设备正被「%1」占用，不能换云台").arg(this->device().holder()));
             return;
         }
         mount_ = i;
         if (this->device().isOpen())
             open();
         else
-            Q_EMIT this->device().logSource().logMessage(QStringLiteral("架在：%1 · %2（连接时生效）")
+            Q_EMIT this->device().logMessage(QStringLiteral("架在：%1 · %2（连接时生效）")
                                              .arg(mounts_[i].get().device().displayName(), mounts_[i].get().device().subtitle()));
         Q_EMIT mountChanged();
     }
@@ -211,7 +210,7 @@ public:
         if (s == seed_)
             return;
         seed_ = s;
-        Q_EMIT this->device().logSource().logMessage(QStringLiteral("随机种子：%1").arg(v));
+        Q_EMIT this->device().logMessage(QStringLiteral("随机种子：%1").arg(v));
         Q_EMIT sceneChanged();
     }
 
@@ -231,7 +230,7 @@ public Q_SLOTS:
     {
         if (mounts_.empty())
         {
-            Q_EMIT this->device().logSource().logMessage(QStringLiteral("没有可架的云台，虚拟采集卡起不来"));
+            Q_EMIT this->device().logMessage(QStringLiteral("没有可架的云台，虚拟采集卡起不来"));
             return false;
         }
         GMBDeviceBase &g = mounts_[mount_].get();
@@ -244,9 +243,9 @@ public Q_SLOTS:
         };
         const bool accepted = this->device().open(p);
         if (accepted)
-            Q_EMIT this->device().logSource().logMessage(QStringLiteral("架在：%1 · %2").arg(g.device().displayName(), g.device().subtitle()));
+            Q_EMIT this->device().logMessage(QStringLiteral("架在：%1 · %2").arg(g.device().displayName(), g.device().subtitle()));
         else
-            Q_EMIT this->device().logSource().logMessage(QStringLiteral("虚拟采集卡已在运行")); // 已连接时不改当前请求。
+            Q_EMIT this->device().logMessage(QStringLiteral("虚拟采集卡已在运行")); // 已连接时不改当前请求。
         return accepted;
     }
     void close() { this->device().close(); }
@@ -326,10 +325,10 @@ private:
         if (slot == v)
             return;
         slot = v;
-        Q_EMIT this->device().logSource().logMessage(what + QStringLiteral("：%1").arg(v));
+        Q_EMIT this->device().logMessage(what + QStringLiteral("：%1").arg(v));
         Q_EMIT sceneChanged();
     }
-    void onFieldChanged() { Q_EMIT this->device().logSource().logMessage(QStringLiteral("风场：") + field_.describe()); }
+    void onFieldChanged() { Q_EMIT this->device().logMessage(QStringLiteral("风场：") + field_.describe()); }
 
     // [主] 生成固定高度网格的一帧；采样历史和风羽图共用同一层数组。
     void onTick()

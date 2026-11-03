@@ -46,7 +46,7 @@ ModulePage {
         readonly property SimCardDevice device: root.SimCardDevice
     }
     Connections {
-        target: internals.device.device.logSource
+        target: internals.device.device
         function onLogMessage(text): void { root.logMessage(text) }
     }
 }
