@@ -96,3 +96,8 @@ Collector 的 onFeed 接收 optional<QByteArray> 的 const 引用，由本型号
 本轮仅本地整理，不推送；集成验证见主程序维护记录。
 
 2026-11-05 表单统一（用户定）：舒适区双输入列采用 FieldStrip 权重，范围和输入值仍由官邸管理。 公共视觉规格由 UICore 提供，不增加业务状态。Windows 主程序增量构建、八秒离屏冒烟通过；固定依赖在本地更新，暂不推送。
+
+
+### 2026-11-05 公共视觉与连接布局
+
+说明与小标题使用 UICore HintText/Subheading，当前折减使用 ReadoutValue；风场配置、布局和采样行为不变。 本轮仅本地整理，未推送；Windows 集成验证记录见主程序维护操作。

@@ -15,29 +15,39 @@ Section {
     required property var device // 分区模板的创建参数传入本台设备
     title: qsTr("架设与风场")
 
-    Label { text: qsTr("架在哪台转台上"); font.bold: true }
+    Subheading {
+        text: qsTr("架在哪台转台上")
+    }
     FieldRow {
         label: qsTr("转台")
-        ChoiceField { Layout.fillWidth: true
-                      model: root.device.mountOptions.map(function (device) {
-                          return device.name + " · " + device.subtitle
-                      })
-                      value: root.device.mount
-                      onCommitted: function (i) { root.device.mount = i } }
+        ChoiceField {
+            Layout.fillWidth: true
+            model: root.device.mountOptions.map(function (device) {
+                return device.name + " · " + device.subtitle;
+            })
+            value: root.device.mount
+            onCommitted: function (i) {
+                root.device.mount = i;
+            }
+        }
     }
-    Label {
+    HintText {
         text: qsTr("采样时实时取这台转台此刻的指向合成，转台没有指向就采不了；连着换转台即刻生效（任务或单卡测试占用时不能换），没连时下次连接生效。单卡测试的角度软件不记录，与真卡一样。")
-        color: palette.placeholderText
-        font.pointSize: 9
-        wrapMode: Text.Wrap
-        Layout.preferredWidth: 1
-        Layout.fillWidth: true
     }
 
-    SimWindFields { device: root.device; Layout.fillWidth: true }
+    SimWindFields {
+        device: root.device
+        Layout.fillWidth: true
+    }
     DoubleButtonRow {
         Layout.topMargin: 4
-        firstAction: Action { text: qsTr("连接"); onTriggered: root.device.open() }
-        secondAction: Action { text: qsTr("断开"); onTriggered: root.device.close() }
+        firstAction: Action {
+            text: qsTr("连接")
+            onTriggered: root.device.open()
+        }
+        secondAction: Action {
+            text: qsTr("断开")
+            onTriggered: root.device.close()
+        }
     }
 }
