@@ -6,6 +6,7 @@ import QtQuick.Layouts
 
 ColumnLayout {
     id: root
+    spacing: FormStyle.rowSpacing
     required property SimCardDevice device
     Subheading {
         text: qsTr("探测器（%1 门 × %2 频点，门距 %3 m）").arg(root.device.rows).arg(root.device.cols).arg(root.device.gateSpacing)

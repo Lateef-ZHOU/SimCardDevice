@@ -6,6 +6,7 @@ import QtQuick.Layouts
 
 ColumnLayout {
     id: root
+    spacing: FormStyle.rowSpacing
     required property SimCardDevice device
     Subheading {
         text: qsTr("虚拟风场")

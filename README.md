@@ -101,3 +101,7 @@ Collector 的 onFeed 接收 optional<QByteArray> 的 const 引用，由本型号
 ### 2026-11-05 公共视觉与连接布局
 
 说明与小标题使用 UICore HintText/Subheading，当前折减使用 ReadoutValue；风场配置、布局和采样行为不变。 本轮仅本地整理，未推送；Windows 集成验证记录见主程序维护操作。
+
+### 2026-11-05 表单行距补齐
+
+SimWindFields 与 SimDetectorFields 的普通行距明确使用 UICore FormStyle.rowSpacing，已有组间距、字段布局和业务参数保持。主程序 Windows 增量构建及八秒冒烟通过；仅本地提交，未推送。
