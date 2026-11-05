@@ -15,9 +15,9 @@ Section {
     required property var device // 分区模板的创建参数传入本台设备
     title: qsTr("架设与风场")
 
-    Label { text: qsTr("架在哪台云台上"); font.bold: true }
+    Label { text: qsTr("架在哪台转台上"); font.bold: true }
     FieldRow {
-        label: qsTr("云台")
+        label: qsTr("转台")
         ChoiceField { Layout.fillWidth: true
                       model: root.device.mountOptions.map(function (device) {
                           return device.name + " · " + device.subtitle
@@ -26,7 +26,7 @@ Section {
                       onCommitted: function (i) { root.device.mount = i } }
     }
     Label {
-        text: qsTr("采样时实时取这台云台此刻的指向合成，云台没有指向就采不了；连着换云台即刻生效（任务或单卡测试占用时不能换），没连时下次连接生效。单卡测试的角度软件不记录，与真卡一样。")
+        text: qsTr("采样时实时取这台转台此刻的指向合成，转台没有指向就采不了；连着换转台即刻生效（任务或单卡测试占用时不能换），没连时下次连接生效。单卡测试的角度软件不记录，与真卡一样。")
         color: palette.placeholderText
         font.pointSize: 9
         wrapMode: Text.Wrap

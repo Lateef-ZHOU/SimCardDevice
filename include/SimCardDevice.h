@@ -95,7 +95,7 @@ public:
 
     // mounts = 可以架上去的云台（装配根交，次序即页面次序）；出生选中虚拟云台（没有就选第一台），连接时才架上去起采样器。
     explicit SimCardDevice(Mounts mounts, QObject *parent = nullptr)
-        : DAQDevice(QStringLiteral("虚拟采集卡"), QStringLiteral("仿真 · 风场 → 功率谱"), parent)
+        : DAQDevice(QStringLiteral("采集·仿真"), QStringLiteral("450×200"), parent)
     {
         setObjectName(QStringLiteral("SimCard")); // ASCII 标识：落盘会话目录名用
         for (GMBDeviceBase &gimbal : mounts) addGimbal(&gimbal);
@@ -166,7 +166,7 @@ public:
             return;
         if (!this->device().lockMatches({}))
         {
-            Q_EMIT this->device().logMessage(QStringLiteral("设备正被「%1」占用，不能换云台").arg(this->device().holder().value()));
+            Q_EMIT this->device().logMessage(QStringLiteral("设备正被「%1」占用，不能换转台").arg(this->device().holder().value()));
             return;
         }
         mount_ = i;
@@ -229,7 +229,7 @@ public Q_SLOTS:
     {
         if (mounts_.empty())
         {
-            Q_EMIT this->device().logMessage(QStringLiteral("没有可架的云台，虚拟采集卡起不来"));
+            Q_EMIT this->device().logMessage(QStringLiteral("没有可架的转台，虚拟采集卡起不来"));
             return false;
         }
         GMBDeviceBase &g = mounts_[mount_].get();
