@@ -94,3 +94,5 @@ Windows 独立 Handle 构建与 CTest 1/1 通过，主程序增量构建和八�
 Collector 的 onFeed 接收 optional<QByteArray> 的 const 引用，由本型号解析端取出字节。空输入由 DeviceCore 公共 feed 拦截；请求号、解析及收齐规则不变。
 
 本轮仅本地整理，不推送；集成验证见主程序维护记录。
+
+2026-11-05 表单统一（用户定）：舒适区双输入列采用 FieldStrip 权重，范围和输入值仍由官邸管理。 公共视觉规格由 UICore 提供，不增加业务状态。Windows 主程序增量构建、八秒离屏冒烟通过；固定依赖在本地更新，暂不推送。

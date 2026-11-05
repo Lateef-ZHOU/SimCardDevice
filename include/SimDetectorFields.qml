@@ -69,7 +69,7 @@ ColumnLayout {
         }
         FieldStrip.Col {
             label: qsTr("舒适区（℃，下限 ~ 上限）")
-            Layout.preferredWidth: 160
+            weight: 2
             RealField { Layout.fillWidth: true; decimals: 0; minimum: -80; maximum: root.device.highC
                         value: root.device.lowC
                         onCommitted: function (v) { root.device.lowC = v } }
