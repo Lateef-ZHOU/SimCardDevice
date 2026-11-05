@@ -35,11 +35,9 @@ Section {
     }
 
     SimWindFields { device: root.device; Layout.fillWidth: true }
-    RowLayout {
-        Layout.fillWidth: true
+    DoubleButtonRow {
         Layout.topMargin: 4
-        spacing: 8
-        Button { Layout.fillWidth: true; text: qsTr("连接"); onClicked: root.device.open() }
-        Button { Layout.fillWidth: true; text: qsTr("断开"); onClicked: root.device.close() }
+        firstAction: Action { text: qsTr("连接"); onTriggered: root.device.open() }
+        secondAction: Action { text: qsTr("断开"); onTriggered: root.device.close() }
     }
 }
