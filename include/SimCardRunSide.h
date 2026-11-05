@@ -29,7 +29,7 @@ struct Geometry
     [[nodiscard]] constexpr double wsAbsMax() const noexcept { return col * freq2WsSlope / 2.0; }
 };
 inline constexpr Geometry geometry{450, 200};
-inline constexpr int AccumSecDefault = 2;
+inline constexpr int AccumSecDefault = 1;
 inline constexpr int AccumSecMin = 1;
 inline constexpr int AccumSecMax = 3600;
 inline constexpr double gateSpacingM = 60.0; // 门距（m）

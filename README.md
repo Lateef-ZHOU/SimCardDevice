@@ -105,3 +105,10 @@ Collector 的 onFeed 接收 optional<QByteArray> 的 const 引用，由本型号
 ### 2026-11-05 表单行距补齐
 
 SimWindFields 与 SimDetectorFields 的普通行距明确使用 UICore FormStyle.rowSpacing，已有组间距、字段布局和业务参数保持。主程序 Windows 增量构建及八秒冒烟通过；仅本地提交，未推送。
+
+
+### 2026-11-05 连接间距、累积默认值与径向风页面整理
+
+虚拟卡默认累积时间统一为1秒；显式输入及仿真采样行为保持。
+
+主程序 Windows Release 增量构建、八秒桌面冒烟及四窗口装配检查通过；运行 stderr 为空，保留既有 CDL5/Qt 生成代码 C4702 编译警告。仅本地验证，未连接硬件、未推送。
