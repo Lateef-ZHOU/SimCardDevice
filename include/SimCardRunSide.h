@@ -55,10 +55,12 @@ inline constexpr qsizetype frameBytes =
 class SimCardCollector final : public DAQCollector
 {
 public:
-    // 原型只持不可变请求信息；不为尚未运行的请求分配谱数组。
-    [[nodiscard]] static std::shared_ptr<const SimCardCollector> createPrototype(const int accumSec, DAQContext context = {})
+    // 族模板层按请求参数造完整实例并备齐谱数组；每次创建（含重试）获得新的请求身份。
+    [[nodiscard]] static std::shared_ptr<SimCardCollector> create(const DAQParameters &parameters)
     {
-        return std::shared_ptr<const SimCardCollector>(new const SimCardCollector(accumSec, std::move(context)));
+        auto next = std::shared_ptr<SimCardCollector>(new SimCardCollector(parameters.accumSec, parameters.context));
+        next->front().spectrum.resize(SimCardConfig::geometry.row * SimCardConfig::geometry.col);
+        return next;
     }
     [[nodiscard]] QList<QByteArray> buildStart() const override
     {
@@ -70,12 +72,7 @@ public:
     }
     // 看门狗：累积时长之外再给两秒余量
     [[nodiscard]] int timeoutMs() const override { return accumSec() * 1000 + 2000; }
-    [[nodiscard]] std::shared_ptr<SimCardCollector> makeSelf() const
-    {
-        auto next = std::shared_ptr<SimCardCollector>(new SimCardCollector(accumSec(), context()));
-        next->front().spectrum.resize(SimCardConfig::geometry.row * SimCardConfig::geometry.col);
-        return next;
-    }
+    [[nodiscard]] std::shared_ptr<SimCardCollector> makeSelf() const { return create({accumSec(), context()}); }
 
 private:
     explicit SimCardCollector(const int accumSec, DAQContext context)
@@ -112,7 +109,7 @@ private:
         complete();
     }
     inline static std::atomic<quint64> nextRequestId_{0};
-    const quint64 requestId_ = ++nextRequestId_; // 每次 makeSelf（含重试）获得不同的请求身份。
+    const quint64 requestId_ = ++nextRequestId_; // 每次创建（含重试）获得不同的请求身份。
 };
 
 Q_DECLARE_METATYPE(std::shared_ptr<const SimCardCollector>)
