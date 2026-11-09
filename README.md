@@ -1,5 +1,7 @@
 # SimCardDevice
 
+2026-11-09 用户定：删除处理线程、中间 Core 与型号处理 lambda；末端直接继承 `DAQDevice<HandleT, CollectorT>`，唯一 QObject 来自 Handle。Collector 继承族基的通道数组，型号只给通道规格并按协议整理功率谱，收齐末包调用 complete() 由族基在收包线程做标准处理；显示、落盘（每帧一个 JSON）与风廓线由族层完成。页面改接族信号 spectrumReady/radialReady/profileReady（按通道下标），family 改为 QtObject，删除 device.device 自引用。单路 SIM，与合成器同一组标定。删除 SimCardProcessing.h。验证：独立构建零警告，CTest 2/2。
+
 2026-11-09 用户定：云台族基不再是 QObject。虚拟卡登记云台仍收 QObject* 并交叉转换验族，退场监听设备对象本身的 destroyed；取名称/QML 父页时经同一对象交叉转换到 QObject。页面 gimbals/gimbal 类型改为 QtObject。本卡（DAQ 族）不变。
 
 2026-11-03 上传接口：官邸仍拥有唯一具体 Core；Core 继承 `Device<HandleT, CollectorT>`，Device 直接继承 Handle 并重写 onData。Core 只提供 Qt 属性、锁信号与末端预析构；不增设上传回调、状态缓存或逐包信号转发。协议、Collector 与 UI 逻辑保持。

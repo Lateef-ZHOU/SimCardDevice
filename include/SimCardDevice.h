@@ -1,5 +1,4 @@
 #pragma once
-#include "SimCardProcessing.h"
 #include <QDateTime>
 #include <QtQml/qqmlregistration.h>
 #include "DAQChartSpecification.h"
@@ -31,31 +30,19 @@
 // 虚拟采集卡：主线程维护场景历史和页面设置，Handle 主线程按固定累积窗取数。
 // 风廓线与真值图共享 const 帧；角度由 QML 创建的 AngleChartItem 独持历史。
 // 交给 Handle 工作线程的计算输入仅含值与只读帧份额，不捕获页面或设备。
-// Qt 元对象末端：Handle 与 Device 共用一个 QObject；析构先等上传退出。
-class SimCardCore final : public Device<LidarSimCardHandle, SimCardCollector>
+// Qt 元对象末端：Handle、Device 与采集卡族共用这一个 QObject；析构首句先停节拍再拆派生状态。
+class SimCardDevice final
+#ifdef Q_MOC_RUN
+    : public LidarSimCardHandle // 元对象基类：唯一 QObject 来自 Handle，模板层不加 Q_OBJECT。
+#else
+    : public DAQDevice<LidarSimCardHandle, SimCardCollector>
+#endif
 {
     Q_OBJECT
     Q_PROPERTY(QString displayName MEMBER displayName CONSTANT)
     Q_PROPERTY(QString subtitle MEMBER subtitle CONSTANT)
     Q_PROPERTY(bool isOpen READ isOpen)
     Q_PROPERTY(QVariant holder READ qmlHolder)
-public:
-    using Device::Device;
-    ~SimCardCore() override { PreDestruction(); }
-Q_SIGNALS:
-    void lockChanged(HandleCore::ResourcePhase phase) override;
-private:
-    void PreDestruction() noexcept final { Device::PreDestruction(); }
-};
-
-class SimCardDevice final
-#ifdef Q_MOC_RUN
-    : public DAQDeviceBase // 模板层继承的族级元对象。
-#else
-    : public DAQDevice<SimCardCore>
-#endif
-{
-    Q_OBJECT
     QML_ELEMENT
     QML_ATTACHED(SimCardDevice)
     QML_UNCREATABLE("由对应 QML 官邸创建和拥有")
@@ -104,7 +91,6 @@ public:
         onTick(); // 出生先出业务快照；页面初建经 publishTruth 取得同一拍的真值列
         tick_.start();
         connect(&field_, &WindFieldSource::changed, this, &SimCardDevice::onFieldChanged);
-        startProcessing();
     }
 
     ~SimCardDevice() override { PreDestruction(); }
@@ -165,16 +151,16 @@ public:
     {
         if (i == mount_ || i < 0 || i >= static_cast<int>(mounts_.size()))
             return;
-        if (!this->device().lockMatches({}))
+        if (!this->lockMatches({}))
         {
-            Q_EMIT this->device().logMessage(QStringLiteral("设备正被「%1」占用，不能换转台").arg(this->device().holder().value()));
+            Q_EMIT this->logMessage(QStringLiteral("设备正被「%1」占用，不能换转台").arg(this->holder().value()));
             return;
         }
         mount_ = i;
-        if (this->device().isOpen())
+        if (this->isOpen())
             open();
         else
-            Q_EMIT this->device().logMessage(QStringLiteral("架在：%1 · %2（连接时生效）")
+            Q_EMIT this->logMessage(QStringLiteral("架在：%1 · %2（连接时生效）")
                                              .arg(mounts_[i].get().device().displayName, mounts_[i].get().device().subtitle));
         Q_EMIT mountChanged();
     }
@@ -210,16 +196,18 @@ public:
         if (s == seed_)
             return;
         seed_ = s;
-        Q_EMIT this->device().logMessage(QStringLiteral("随机种子：%1").arg(v));
+        Q_EMIT this->logMessage(QStringLiteral("随机种子：%1").arg(v));
         Q_EMIT sceneChanged();
     }
 
 Q_SIGNALS:
     void truthReady(VerticalWindProfilePtr profile);
-    void specReady(const QVector<double> &values);
-    void wsReady(const QVector<double> &values);
-    void cnrReady(const QVector<double> &values);
-    void profileReady(VerticalWindProfilePtr profile);
+    // 族信号按通道下标；本卡只有 0 = SIM。
+    void lockChanged(HandleCore::ResourcePhase phase) override;
+    void spectrumReady(int channel, const QVector<double> &values) override;
+    void radialReady(int channel, const QVector<double> &ranges, const QVector<double> &speeds,
+                     const QVector<double> &cnr, bool calibrated) override;
+    void profileReady(int channel, NonuniformVerticalWindProfilePtr profile) override;
     void mountChanged();
     void mountOptionsChanged();
     void sceneChanged();
@@ -230,7 +218,7 @@ public Q_SLOTS:
     {
         if (mounts_.empty())
         {
-            Q_EMIT this->device().logMessage(QStringLiteral("没有可架的转台，虚拟采集卡起不来"));
+            Q_EMIT this->logMessage(QStringLiteral("没有可架的转台，虚拟采集卡起不来"));
             return false;
         }
         GMBDeviceBase &g = mounts_[mount_].get();
@@ -241,14 +229,14 @@ public Q_SLOTS:
             if (input.poses.empty() || input.scenes.empty()) return std::nullopt;
             return input;
         };
-        const bool accepted = this->device().open(p);
+        const bool accepted = LidarSimCardHandle::open(p); // 本槽按名遮住 Handle::open
         if (accepted)
-            Q_EMIT this->device().logMessage(QStringLiteral("架在：%1 · %2").arg(g.device().displayName, g.device().subtitle));
+            Q_EMIT this->logMessage(QStringLiteral("架在：%1 · %2").arg(g.device().displayName, g.device().subtitle));
         else
-            Q_EMIT this->device().logMessage(QStringLiteral("虚拟采集卡已在运行")); // 已连接时不改当前请求。
+            Q_EMIT this->logMessage(QStringLiteral("虚拟采集卡已在运行")); // 已连接时不改当前请求。
         return accepted;
     }
-    void close() { this->device().close(); }
+    void close() { LidarSimCardHandle::close(); }
     void startTest(const int accumSec, const bool save, const QUrl &folder)
     {
         DAQDevice::startTest(accumSec, save, folder, AcqSaver::sessionDir(
@@ -257,9 +245,6 @@ public Q_SLOTS:
     void cancelTest() noexcept { DAQDevice::cancelTest(); }
 
 private:
-
-    void run() override { consumeFrames(makeSimCardProcessor(this)); }
-
     void PreDestruction() noexcept final
     {
         static_assert(FinalDevice<SimCardDevice, decltype(&SimCardDevice::PreDestruction)>);
@@ -325,10 +310,10 @@ private:
         if (slot == v)
             return;
         slot = v;
-        Q_EMIT this->device().logMessage(what + QStringLiteral("：%1").arg(v));
+        Q_EMIT this->logMessage(what + QStringLiteral("：%1").arg(v));
         Q_EMIT sceneChanged();
     }
-    void onFieldChanged() { Q_EMIT this->device().logMessage(QStringLiteral("风场：") + field_.describe()); }
+    void onFieldChanged() { Q_EMIT this->logMessage(QStringLiteral("风场：") + field_.describe()); }
 
     // [主] 生成固定高度网格的一帧；采样历史和风羽图共用同一层数组。
     void onTick()

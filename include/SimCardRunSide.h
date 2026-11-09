@@ -60,32 +60,42 @@ public:
     {
         return std::shared_ptr<const SimCardCollector>(new const SimCardCollector(accumSec, std::move(context)));
     }
-    [[nodiscard]] const QVector<double> &constFrame() const
-    {
-        static const QVector<double> empty;
-        return settled() ? frame_ : empty;
-    }
-    [[nodiscard]] bool settled() const override { return received_; }
     [[nodiscard]] QList<QByteArray> buildStart() const override
     {
-        return {SimCardWire::encode(SimCardWire::Command{SimCardWire::Command::Accumulate, accumSec_, requestId_})};
+        return {SimCardWire::encode(SimCardWire::Command{SimCardWire::Command::Accumulate, accumSec(), requestId_})};
     }
     [[nodiscard]] QList<QByteArray> buildStop() const override
     {
         return {SimCardWire::encode(SimCardWire::Command{SimCardWire::Command::Stop, 0, requestId_})};
     }
     // 看门狗：累积时长之外再给两秒余量
-    [[nodiscard]] int timeoutMs() const override { return accumSec_ * 1000 + 2000; }
+    [[nodiscard]] int timeoutMs() const override { return accumSec() * 1000 + 2000; }
     [[nodiscard]] std::shared_ptr<SimCardCollector> makeSelf() const
     {
-        auto next = std::shared_ptr<SimCardCollector>(new SimCardCollector(accumSec_, context()));
-        next->frame_.resize(SimCardConfig::geometry.row * SimCardConfig::geometry.col);
+        auto next = std::shared_ptr<SimCardCollector>(new SimCardCollector(accumSec(), context()));
+        next->front().spectrum.resize(SimCardConfig::geometry.row * SimCardConfig::geometry.col);
         return next;
     }
 
 private:
     explicit SimCardCollector(const int accumSec, DAQContext context)
-        : DAQCollector(std::move(context)), accumSec_(std::clamp(accumSec, SimCardConfig::AccumSecMin, SimCardConfig::AccumSecMax)) {}
+        : DAQCollector(std::move(context), std::clamp(accumSec, SimCardConfig::AccumSecMin, SimCardConfig::AccumSecMax),
+                       {channel()}) {}
+
+    // 单路 SIM：与合成器同一组标定（频点 i 记作 i MHz、系数 freq2WsSlope，零多普勒在中心频点）。
+    static DAQChannel channel()
+    {
+        const auto &geo = SimCardConfig::geometry;
+        DAQChannel c;
+        c.name = QStringLiteral("SIM");
+        c.rows = geo.row;
+        c.columns = geo.col;
+        for (int gate = 0; gate < geo.row; ++gate) c.rangeM.append(gate * SimCardConfig::gateSpacingM);
+        for (int bin = 0; bin < geo.col; ++bin) c.freqMHz.append(bin);
+        c.zeroWindMHz = geo.col / 2.0;
+        c.metersPerSecondPerMHz = SimCardConfig::freq2WsSlope;
+        return c;
+    }
 
     void onFeed(const std::optional<QByteArray> &item, const RxTime at) override
     {
@@ -93,19 +103,16 @@ private:
         if (raw.size() != SimCardWire::headerBytes + SimCardConfig::frameBytes
             || qFromUnaligned<quint64>(raw.constData()) != requestId_)
             return; // 不完整报文或已取消/重试的旧请求：不认
-        double *const out = frame_.data();
+        double *const out = front().spectrum.data();
         const char *const bytes = raw.constData() + SimCardWire::headerBytes;
         constexpr int elements = SimCardConfig::geometry.row * SimCardConfig::geometry.col;
         for (int i = 0; i < elements; ++i)
             out[i] = qFromUnaligned<quint16>(bytes + i * sizeof(quint16));
         frameTime_ = at;
-        received_ = true;
+        complete();
     }
     inline static std::atomic<quint64> nextRequestId_{0};
     const quint64 requestId_ = ++nextRequestId_; // 每次 makeSelf（含重试）获得不同的请求身份。
-    const int accumSec_;
-    QVector<double> frame_;
-    bool received_ = false;
 };
 
 Q_DECLARE_METATYPE(std::shared_ptr<const SimCardCollector>)

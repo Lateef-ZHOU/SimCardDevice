@@ -15,7 +15,7 @@ QtObject {
                 specification: root.chartParameters.plotConfiguration
                 Connections {
                     target: root.device
-                    function onSpecReady(values) { surface.updateSpectrum(values) }
+                    function onSpectrumReady(channel, values) { surface.updateSpectrum(values) }
                 }
             }
         },
@@ -26,8 +26,10 @@ QtObject {
                 specification: root.chartParameters.plotConfiguration
                 Connections {
                     target: root.device
-                    function onWsReady(values) { wind.updateWS(values) }
-                    function onCnrReady(values) { wind.updateCNR(values) }
+                    function onRadialReady(channel, ranges, speeds, cnr, calibrated) {
+                        wind.updateWS(speeds)
+                        wind.updateCNR(cnr)
+                    }
                 }
             }
         },
@@ -40,7 +42,7 @@ QtObject {
                     windowSeconds: spec.barbWindow, columnSeconds: spec.barbColumn })
                 Connections {
                     target: root.device
-                    function onProfileReady(profile) { barb.appendColumn(profile) }
+                    function onProfileReady(channel, profile) { barb.appendColumn(profile) }
                 }
             }
         },
