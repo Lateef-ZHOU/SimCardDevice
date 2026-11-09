@@ -98,7 +98,7 @@ public:
         : DAQDevice(QStringLiteral("采集·仿真"), QStringLiteral("450×200"), parent)
     {
         setObjectName(QStringLiteral("SimCard")); // ASCII 标识：落盘会话目录名用
-        for (GMBDeviceBase &gimbal : mounts) addGimbal(&gimbal);
+        for (GMBDeviceBase &gimbal : mounts) addGimbal(&objectOf(gimbal));
         tick_.setInterval(SimCardConfig::fieldTick);
         connect(&tick_, &QTimer::timeout, this, &SimCardDevice::onTick);
         onTick(); // 出生先出业务快照；页面初建经 publishTruth 取得同一拍的真值列
@@ -133,7 +133,8 @@ public:
         if (!gimbal || std::ranges::any_of(mounts_, [&](const auto &m) { return &m.get() == gimbal; })) return;
         mounts_.emplace_back(*gimbal);
         if (object->objectName() == QStringLiteral("SimGimbal")) mount_ = static_cast<int>(mounts_.size()) - 1;
-        connect(gimbal->deviceObject(), &QObject::destroyed, this, [this, gimbal] {
+        // destroyed 时云台族基子对象已析构，回调只比较指针；采样链已在 close 中撤下。
+        connect(object, &QObject::destroyed, this, [this, gimbal] {
             const auto *selected = mounts_.empty() ? nullptr : &mounts_[mount_].get();
             if (selected == gimbal) close();
             std::erase_if(mounts_, [&](const auto &m) { return &m.get() == gimbal; });
@@ -234,7 +235,7 @@ public Q_SLOTS:
         }
         GMBDeviceBase &g = mounts_[mount_].get();
         SimCardParams<SimSpectrumGenerator::Input> p;
-        p.sourceKey = g.objectName();
+        p.sourceKey = objectOf(g).objectName();
         p.capture = [this, &g](const RxTime begin, const RxTime end) -> std::optional<SimSamplingInput> {
             SimSamplingInput input{readAngles(g, begin, end), slot_.recent(begin, end)};
             if (input.poses.empty() || input.scenes.empty()) return std::nullopt;
@@ -346,15 +347,19 @@ private:
     [[nodiscard]] WorldPoseHistory readAngles(GMBDeviceBase &g, const RxTime begin, const RxTime end) const
     {
         Q_ASSERT(QThread::currentThread() == thread());
-        if (!parent() || !g.parent() || !g.device().isOpen()) return {};
+        QObject *const page = objectOf(g).parent();
+        if (!parent() || !page || !g.device().isOpen()) return {};
         QVariant result;
         if (!QMetaObject::invokeMethod(parent(), "worldHistory", Qt::DirectConnection,
                                       Q_RETURN_ARG(QVariant, result),
-                                      Q_ARG(QVariant, QVariant::fromValue(g.parent())),
+                                      Q_ARG(QVariant, QVariant::fromValue(page)),
                                       Q_ARG(QVariant, QVariant::fromValue(begin)),
                                       Q_ARG(QVariant, QVariant::fromValue(end)))) return {};
         return result.value<WorldPoseHistory>();
     }
+
+    // 云台族基是纯 C++ 旁支；每台云台的唯一 QObject 来自其 Handle，同一对象内交叉转换必然成功。
+    [[nodiscard]] static QObject &objectOf(GMBDeviceBase &gimbal) { return dynamic_cast<QObject &>(gimbal); }
 
     // ── 可架的云台与选中项 ──
     Mounts mounts_;

@@ -29,7 +29,7 @@ ModulePage {
     readonly property var deviceState: internals.device.device
 
 
-    required property GMBDeviceBase gimbal
+    required property QtObject gimbal // 云台设备本身；族基不是 QObject，登记时由 C++ 验族
     function worldHistory(page, begin, end) {
         return page && page.family === root.gimbal ? page.worldHistory(begin, end) : undefined
     }

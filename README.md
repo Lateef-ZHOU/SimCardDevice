@@ -1,5 +1,7 @@
 # SimCardDevice
 
+2026-11-09 用户定：云台族基不再是 QObject。虚拟卡登记云台仍收 QObject* 并交叉转换验族，退场监听设备对象本身的 destroyed；取名称/QML 父页时经同一对象交叉转换到 QObject。页面 gimbals/gimbal 类型改为 QtObject。本卡（DAQ 族）不变。
+
 2026-11-03 上传接口：官邸仍拥有唯一具体 Core；Core 继承 `Device<HandleT, CollectorT>`，Device 直接继承 Handle 并重写 onData。Core 只提供 Qt 属性、锁信号与末端预析构；不增设上传回调、状态缓存或逐包信号转发。协议、Collector 与 UI 逻辑保持。
 
 全功能与 simonly 页面共用的采集图窗统一命名为 `功率谱`、`径向风`、`风廓线`，径向风页继续包含风速和 CNR；独立的 `风场真值` 图保持原名称。仅调整名称，不改历史采样、处理与保存接口。
@@ -35,7 +37,7 @@ MIT，Copyright (c) 2026 周涛（ZHOU TAO）。Qt、libserialport、libpcap/Npc
 
 同一 QML 模块同时提供 `SimCardModule`（全功能）和 `SimCardSimOnlyModule`（数字样机）。每个页面以 Qt attached 机制拥有唯一的同类型 C++ 后端，没有第二套设备/任务实现。全功能主程序继续使用原入口。
 
-simonly 页面接收唯一 GMBDeviceBase gimbal，保留完整风场、探测器、环境及四个图窗，不提供单卡试采、挂载选择或保存设置。两套页面共用 SimWindFields、SimDetectorFields、SimCardPlots。配置应用后 captureScene 同步记录完整场景，再由应用连接；历史查询仍经云台 QML 官邸。field 暴露 WindFieldSource 的实际只读类型，设置和采样机制不变。
+simonly 页面接收唯一云台设备 gimbal（QtObject），保留完整风场、探测器、环境及四个图窗，不提供单卡试采、挂载选择或保存设置。两套页面共用 SimWindFields、SimDetectorFields、SimCardPlots。配置应用后 captureScene 同步记录完整场景，再由应用连接；历史查询仍经云台 QML 官邸。field 暴露 WindFieldSource 的实际只读类型，设置和采样机制不变。
 
 [LiDAR_DataACQ-simonly](https://github.com/Lateef-ZHOU/LiDAR_DataACQ-simonly) 通过固定版本装配这些入口，负责 JSON、命令行、设备就绪后启动和系统信号取消。窗口隐藏仍保留历史，不触发实际绘制。测试创建两套真实页面并检查后端唯一性、销毁和精简分区；跨设备的三任务采样与保存由应用集成测试覆盖。
 
