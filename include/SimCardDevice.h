@@ -117,7 +117,7 @@ public:
             {"windowSeconds", SimCardConfig::truthWindowSec},
             {"columnSeconds", std::chrono::duration<double>(SimCardConfig::fieldTick).count()}};
         const auto plotConfiguration = DAQChartSpecification::make(
-            SimCardConfig::geometry.row, SimCardConfig::geometry.col, SimCardConfig::gateSpacingM,
+            SimCardConfig::geometry.row, SimCardConfig::geometry.col, SimCardConfig::rangeStartM, SimCardConfig::gateSpacingM,
             -static_cast<int>(SimCardConfig::geometry.wsAbsMax()),
             static_cast<int>(SimCardConfig::geometry.wsAbsMax()), SimCardConfig::maxCounts);
         return {{"truthConfiguration", truthConfiguration},
@@ -217,9 +217,8 @@ Q_SIGNALS:
     // 族信号按通道下标；本卡只有 0 = SIM。
     void lockChanged(HandleCore::ResourcePhase phase) override;
     void spectrumReady(int channel, const QVector<double> &values) override;
-    void radialReady(int channel, const QVector<double> &ranges, const QVector<double> &speeds,
-                     const QVector<double> &cnr, bool calibrated) override;
-    void profileReady(int channel, NonuniformVerticalWindProfilePtr profile) override;
+    void radialReady(int channel, const QVector<double> &speeds, const QVector<double> &cnr, bool calibrated) override;
+    void profileReady(int channel, VerticalWindProfilePtr profile) override;
     void mountChanged();
     void mountOptionsChanged();
     void sceneChanged();
@@ -298,6 +297,7 @@ private:
         const auto &g = SimCardConfig::geometry;
         return {.rows = g.row,
                 .cols = g.col,
+                .gateStartM = SimCardConfig::rangeStartM,
                 .gateSpacingM = SimCardConfig::gateSpacingM,
                 .freq2WsSlope = SimCardConfig::freq2WsSlope,
                 .freq2WsIntercept = g.freq2WsIntercept(),
@@ -332,7 +332,7 @@ private:
     {
         const RxTime time = std::chrono::system_clock::now();
         const auto at = std::chrono::steady_clock::now();
-        VerticalWindProfileUnit grid{time, RangeGate::rangeOf(0, SimCardConfig::gateSpacingM),
+        VerticalWindProfileUnit grid{time, RangeGate::rangeOf(0, SimCardConfig::rangeStartM, SimCardConfig::gateSpacingM),
             SimCardConfig::gateSpacingM, std::vector<LinAlg::Vec3>(SimCardConfig::geometry.row)};
         const VerticalWindProfilePtr profile = std::make_shared<const VerticalWindProfileUnit>(
             field_.field(std::move(grid), at, seed_));

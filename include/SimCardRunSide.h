@@ -32,6 +32,7 @@ inline constexpr Geometry geometry{450, 200};
 inline constexpr int AccumSecDefault = 1;
 inline constexpr int AccumSecMin = 1;
 inline constexpr int AccumSecMax = 3600;
+inline constexpr double rangeStartM = 0.0;   // 第 0 门斜距（m）；第 k 门 = rangeStartM + k·gateSpacingM
 inline constexpr double gateSpacingM = 60.0; // 门距（m）
 inline constexpr int framesPerSec = 10;      // 累积帧率：累积帧数 N = 秒数 × 它；计数 = N × 单帧谱（逐帧求和），相对噪声 1/√N
 inline constexpr std::chrono::milliseconds fieldTick{1000}; // 风场节拍：官邸每拍出一张风场——场景换一张快照、真值图追一列
@@ -87,8 +88,10 @@ private:
         c.name = QStringLiteral("SIM");
         c.rows = geo.row;
         c.columns = geo.col;
-        for (int gate = 0; gate < geo.row; ++gate) c.rangeM.append(gate * SimCardConfig::gateSpacingM);
-        for (int bin = 0; bin < geo.col; ++bin) c.freqMHz.append(bin);
+        c.rangeStartM = SimCardConfig::rangeStartM;
+        c.rangeStepM = SimCardConfig::gateSpacingM;
+        c.freqStartMHz = 0.0;
+        c.freqStepMHz = 1.0;
         c.zeroWindMHz = geo.col / 2.0;
         c.metersPerSecondPerMHz = SimCardConfig::freq2WsSlope;
         return c;
