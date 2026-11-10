@@ -20,7 +20,8 @@
 // ============================================================
 namespace SimCardConfig
 {
-inline constexpr double freq2WsSlope = 1.0;
+inline constexpr double wavelengthM = 1.55e-6; // 激光波长（m）；频点 i 记作 i MHz
+inline constexpr double freq2WsSlope = RadialWind::metersPerSecondPerMHz(wavelengthM); // bin → m/s，合成器与收集器共用
 struct Geometry
 {
     int row;
@@ -77,8 +78,7 @@ public:
 
 private:
     explicit SimCardCollector(DAQParameters parameters)
-        : DAQCollector(std::move(parameters),
-                       {channel()}) {}
+        : DAQCollector(std::move(parameters), {channel()}, SimCardConfig::wavelengthM) {}
 
     // 单路 SIM：与合成器同一组标定（频点 i 记作 i MHz、系数 freq2WsSlope，零多普勒在中心频点）。
     static DAQChannel channel()
@@ -92,7 +92,6 @@ private:
         c.freqStartMHz = 0.0;
         c.freqStepMHz = 1.0;
         c.zeroWindMHz = geo.col / 2.0;
-        c.metersPerSecondPerMHz = SimCardConfig::freq2WsSlope;
         return c;
     }
 
