@@ -77,21 +77,17 @@ public:
 
 private:
     explicit SimCardCollector(DAQParameters parameters)
-        : DAQCollector(std::move(parameters), SimCardConfig::frameBytes, SimCardConfig::wavelengthM) {}
+        : DAQCollector(std::move(parameters), SimCardConfig::wavelengthM) {}
 
-    void onFeed(const std::optional<QByteArray> &item, const RxTime at) override
-    {
-        const auto &raw = *item;
-        if (raw.size() != SimCardWire::headerBytes + SimCardConfig::frameBytes
-            || qFromUnaligned<quint64>(raw.constData()) != requestId_)
-            return; // 不完整报文或已取消/重试的旧请求：不认
-        frameTime_ = at;
-        (void)store(0, QByteArrayView(raw).sliced(SimCardWire::headerBytes)); // 去掉报头，一包即一整帧
-    }
-
+    // 一包即一整帧：校验后去掉报头直接解析，无需攒缓冲。
     // 单路 SIM：与合成器同一组标定（频点 i 记作 i MHz、系数 freq2WsSlope，零多普勒在中心频点）。
-    std::vector<DAQChannel> decode(const QByteArray &frame) const override
+    std::optional<std::vector<DAQChannel>> assemble(QByteArrayView raw, RxTime at) override
     {
+        if (raw.size() != SimCardWire::headerBytes + SimCardConfig::frameBytes
+            || qFromUnaligned<quint64>(raw.data()) != requestId_)
+            return std::nullopt; // 不完整报文或已取消/重试的旧请求：不认
+        frameTime_ = at;
+        const QByteArrayView frame = raw.sliced(SimCardWire::headerBytes);
         const auto &geo = SimCardConfig::geometry;
         LinearArray2D<double> spectrum(geo.row, geo.col, SimCardConfig::rangeStartM, SimCardConfig::gateSpacingM, 0.0,
                                        SimCardConfig::binMHz);
