@@ -21,7 +21,8 @@
 namespace SimCardConfig
 {
 inline constexpr double wavelengthM = 1.55e-6; // 激光波长（m）；频点 i 记作 i MHz
-inline constexpr double freq2WsSlope = RadialWind::metersPerSecondPerMHz(wavelengthM); // bin → m/s，合成器与收集器共用
+inline constexpr double binMHz = 1.0; // 频点间隔（MHz）
+inline constexpr double freq2WsSlope = RadialWind::metersPerSecondPerMHz(wavelengthM) * binMHz; // bin → m/s，合成器与收集器共用
 struct Geometry
 {
     int row;
@@ -86,11 +87,8 @@ private:
         const auto &geo = SimCardConfig::geometry;
         DAQChannel c;
         c.name = QStringLiteral("SIM");
-        c.rows = geo.row;
-        c.columns = geo.col;
-        c.radialWind = c.cnr = LinearArray<double>(SimCardConfig::rangeStartM, SimCardConfig::gateSpacingM);
-        c.freqStartMHz = 0.0;
-        c.freqStepMHz = 1.0;
+        c.spectrum = LinearArray2D<double>(geo.row, geo.col, SimCardConfig::rangeStartM, SimCardConfig::gateSpacingM, 0.0,
+                                           SimCardConfig::binMHz);
         c.zeroWindMHz = geo.col / 2.0;
         return c;
     }

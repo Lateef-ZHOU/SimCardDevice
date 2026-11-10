@@ -116,7 +116,8 @@ public:
             {"windowSeconds", SimCardConfig::truthWindowSec},
             {"columnSeconds", std::chrono::duration<double>(SimCardConfig::fieldTick).count()}};
         const auto plotConfiguration = DAQChartSpecification::make(
-            SimCardConfig::geometry.row, SimCardConfig::geometry.col, SimCardConfig::rangeStartM, SimCardConfig::gateSpacingM,
+            LinearArray2D<double>(SimCardConfig::geometry.row, SimCardConfig::geometry.col, SimCardConfig::rangeStartM,
+                                  SimCardConfig::gateSpacingM, 0.0, SimCardConfig::binMHz),
             -static_cast<int>(SimCardConfig::geometry.wsAbsMax()),
             static_cast<int>(SimCardConfig::geometry.wsAbsMax()), SimCardConfig::maxCounts);
         return {{"truthConfiguration", truthConfiguration},
@@ -215,7 +216,7 @@ Q_SIGNALS:
     void truthReady(VerticalWindProfilePtr profile);
     // 族信号按通道下标；本卡只有 0 = SIM。
     void lockChanged(HandleCore::ResourcePhase phase) override;
-    void spectrumReady(int channel, const QVector<double> &values) override;
+    void spectrumReady(int channel, const LinearArray2D<double> &spectrum) override;
     void radialReady(int channel, const LinearArray<double> &speeds, const LinearArray<double> &cnr, bool calibrated) override;
     void profileReady(int channel, VerticalWindProfilePtr profile) override;
     void mountChanged();

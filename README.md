@@ -1,5 +1,7 @@
 # SimCardDevice
 
+2026-11-10 用户定（二维线性数组）：通道规格给出功率谱网格；频点间隔 `binMHz = 1`（频点 i 记作 i MHz），合成器系数由 λ/2 × binMHz 派生。
+
 2026-11-10 用户定（波长与抽稀）：`wavelengthM = 1.55 μm`（用户定）交族基，合成器 `freq2WsSlope` 由 λ/2 派生（频点 i 记作 i MHz），合成与反演同步由 1.0 变为 0.775 m/s/bin。
 
 2026-11-10 用户定（线性数组）：通道规格以 `radialWind = cnr = LinearArray<double>(起点, 门距)` 给出距离轴；`radialReady` 发线性数组，页面原样交给径向风图。
