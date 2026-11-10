@@ -58,25 +58,25 @@ public:
     // 族模板层按请求参数造完整实例并备齐谱数组；每次创建（含重试）获得新的请求身份。
     [[nodiscard]] static std::shared_ptr<SimCardCollector> create(const DAQParameters &parameters)
     {
-        auto next = std::shared_ptr<SimCardCollector>(new SimCardCollector(parameters.accumSec, parameters.context));
+        auto next = std::shared_ptr<SimCardCollector>(new SimCardCollector(parameters));
         next->front().spectrum.resize(SimCardConfig::geometry.row * SimCardConfig::geometry.col);
         return next;
     }
     [[nodiscard]] QList<QByteArray> buildStart() const override
     {
-        return {SimCardWire::encode(SimCardWire::Command{SimCardWire::Command::Accumulate, accumSec(), requestId_})};
+        return {SimCardWire::encode(SimCardWire::Command{SimCardWire::Command::Accumulate, parameters().accumSec, requestId_})};
     }
     [[nodiscard]] QList<QByteArray> buildStop() const override
     {
         return {SimCardWire::encode(SimCardWire::Command{SimCardWire::Command::Stop, 0, requestId_})};
     }
     // 看门狗：累积时长之外再给两秒余量
-    [[nodiscard]] int timeoutMs() const override { return accumSec() * 1000 + 2000; }
-    [[nodiscard]] std::shared_ptr<SimCardCollector> makeSelf() const { return create({accumSec(), context()}); }
+    [[nodiscard]] int timeoutMs() const override { return parameters().accumSec * 1000 + 2000; }
+    [[nodiscard]] std::shared_ptr<SimCardCollector> makeSelf() const { return create(parameters()); }
 
 private:
-    explicit SimCardCollector(const int accumSec, DAQContext context)
-        : DAQCollector(std::move(context), std::clamp(accumSec, SimCardConfig::AccumSecMin, SimCardConfig::AccumSecMax),
+    explicit SimCardCollector(DAQParameters parameters)
+        : DAQCollector(std::move(parameters),
                        {channel()}) {}
 
     // 单路 SIM：与合成器同一组标定（频点 i 记作 i MHz、系数 freq2WsSlope，零多普勒在中心频点）。
