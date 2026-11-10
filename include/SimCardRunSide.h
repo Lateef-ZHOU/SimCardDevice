@@ -88,8 +88,7 @@ private:
         c.name = QStringLiteral("SIM");
         c.rows = geo.row;
         c.columns = geo.col;
-        c.rangeStartM = SimCardConfig::rangeStartM;
-        c.rangeStepM = SimCardConfig::gateSpacingM;
+        c.radialWind = c.cnr = LinearArray<double>(SimCardConfig::rangeStartM, SimCardConfig::gateSpacingM);
         c.freqStartMHz = 0.0;
         c.freqStepMHz = 1.0;
         c.zeroWindMHz = geo.col / 2.0;

@@ -20,7 +20,6 @@
 #include <QVector>
 
 #include "LidarForward.h"     // Detector / Environment / Degradation
-#include "RangeGate.h"       // 门 → 斜距：真值列的高度
 #include "DAQDevice.h"           // 采集卡族两层
 #include "SimCardRunSide.h"  // 宪法 + 收集器
 #include "WindFieldSource.h" // 虚拟风场源
@@ -217,7 +216,7 @@ Q_SIGNALS:
     // 族信号按通道下标；本卡只有 0 = SIM。
     void lockChanged(HandleCore::ResourcePhase phase) override;
     void spectrumReady(int channel, const QVector<double> &values) override;
-    void radialReady(int channel, const QVector<double> &speeds, const QVector<double> &cnr, bool calibrated) override;
+    void radialReady(int channel, const LinearArray<double> &speeds, const LinearArray<double> &cnr, bool calibrated) override;
     void profileReady(int channel, VerticalWindProfilePtr profile) override;
     void mountChanged();
     void mountOptionsChanged();
@@ -332,8 +331,8 @@ private:
     {
         const RxTime time = std::chrono::system_clock::now();
         const auto at = std::chrono::steady_clock::now();
-        VerticalWindProfileUnit grid{time, RangeGate::rangeOf(0, SimCardConfig::rangeStartM, SimCardConfig::gateSpacingM),
-            SimCardConfig::gateSpacingM, std::vector<LinAlg::Vec3>(SimCardConfig::geometry.row)};
+        VerticalWindProfileUnit grid{time, LinearArray<LinAlg::Vec3>(SimCardConfig::rangeStartM, SimCardConfig::gateSpacingM,
+            std::vector<LinAlg::Vec3>(SimCardConfig::geometry.row))};
         const VerticalWindProfilePtr profile = std::make_shared<const VerticalWindProfileUnit>(
             field_.field(std::move(grid), at, seed_));
         slot_.append(profile, {det_, penaltyDb(), SimCardConfig::framesPerSec, seed_});
