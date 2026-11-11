@@ -107,7 +107,7 @@ public:
                                         .arg(accumSec).arg(SimCardConfig::AccumSecMin).arg(SimCardConfig::AccumSecMax));
             return std::nullopt;
         }
-        return DAQParameters{accumSec, std::move(pose), std::move(saveRoot), std::move(sessionDir), sync};
+        return DAQParameters(*this, accumSec, std::move(pose), std::move(saveRoot), std::move(sessionDir), sync);
     }
     Q_INVOKABLE [[nodiscard]] QVariantMap chartParameters() const
     {
