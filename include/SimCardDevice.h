@@ -219,7 +219,7 @@ Q_SIGNALS:
     // 族信号按通道下标；本卡只有 0 = SIM。
     void lockChanged(HandleCore::ResourcePhase phase) override;
     void spectrumReady(int channel, const LinearArray2D<double> &spectrum) override;
-    void radialReady(int channel, const LinearArray<double> &speeds, const LinearArray<double> &cnr, bool calibrated) override;
+    void radialReady(int channel, const LinearArray<double> &speeds, const LinearArray<double> &cnr) override;
     void profileReady(int channel, VerticalWindProfilePtr profile) override;
     void mountChanged();
     void mountOptionsChanged();

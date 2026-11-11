@@ -26,7 +26,7 @@ QtObject {
                 specification: root.chartParameters.plotConfiguration
                 Connections {
                     target: root.device
-                    function onRadialReady(channel, speeds, cnr, calibrated) {
+                    function onRadialReady(channel, speeds, cnr) {
                         wind.updateWS(speeds)
                         wind.updateCNR(cnr)
                     }
