@@ -109,6 +109,8 @@ public:
         }
         return DAQParameters(*this, accumSec, std::move(pose), std::move(saveRoot), std::move(sessionDir), sync);
     }
+    // 仿真卡的停机命令只撤指定请求号的请求；没有 run 时无可停。
+    QList<QByteArray> stopCommands() const override { return {}; }
     Q_INVOKABLE [[nodiscard]] QVariantMap chartParameters() const
     {
         const QVariantMap truthConfiguration{
