@@ -63,15 +63,14 @@ public:
         : DAQCollector(parameters, SimCardConfig::wavelengthM) {}
     [[nodiscard]] QList<QByteArray> buildStart() const override
     {
-        return {SimCardWire::encode(SimCardWire::Command{SimCardWire::Command::Accumulate, parameters().accumSec, requestId_})};
+        return {SimCardWire::encode(SimCardWire::Command{SimCardWire::Command::Accumulate, parameters.accumSec, requestId_})};
     }
     [[nodiscard]] QList<QByteArray> buildStop() const override
     {
         return {SimCardWire::encode(SimCardWire::Command{SimCardWire::Command::Stop, 0, requestId_})};
     }
     // 看门狗：累积时长之外再给两秒余量
-    [[nodiscard]] int timeoutMs() const override { return parameters().accumSec * 1000 + 2000; }
-    [[nodiscard]] std::shared_ptr<SimCardCollector> makeSelf() const { return std::make_shared<SimCardCollector>(parameters()); }
+    [[nodiscard]] int timeoutMs() const override { return parameters.accumSec * 1000 + 2000; }
 
 private:
 
