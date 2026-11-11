@@ -23,7 +23,7 @@
 #include "DAQDevice.h"           // 采集卡族两层
 #include "SimCardRunSide.h"  // 宪法 + 收集器
 #include "WindFieldSource.h" // 虚拟风场源
-#include "GMBDevice.h"           // GMBDeviceBase：所架云台的连接、身份与退场通知
+#include "GMBDevice.h"           // GMBFamily：所架云台的连接、身份与退场通知
 #include "LidarSimCardHandle.h"    // 连接机制：钟 + 采样器
 
 // 虚拟采集卡：主线程维护场景历史和页面设置，Handle 主线程按固定累积窗取数。
@@ -77,14 +77,14 @@ public:
     }
     // JSON 配置一次写完后，立即把完整场景纳入采样历史。
     Q_INVOKABLE void captureScene() { onTick(); }
-    using Mounts = std::vector<std::reference_wrapper<GMBDeviceBase>>;
+    using Mounts = std::vector<std::reference_wrapper<GMBFamily>>;
 
     // mounts = 可以架上去的云台（装配根交，次序即页面次序）；出生选中虚拟云台（没有就选第一台），连接时才架上去起采样器。
     explicit SimCardDevice(Mounts mounts, QObject *parent = nullptr)
         : DAQDevice(QStringLiteral("采集·仿真"), QStringLiteral("450×200"), parent)
     {
         setObjectName(QStringLiteral("SimCard")); // ASCII 标识：落盘会话目录名用
-        for (GMBDeviceBase &gimbal : mounts) addGimbal(&objectOf(gimbal));
+        for (GMBFamily &gimbal : mounts) addGimbal(&objectOf(gimbal));
         tick_.setInterval(SimCardConfig::fieldTick);
         connect(&tick_, &QTimer::timeout, this, &SimCardDevice::onTick);
         onTick(); // 出生先出业务快照；页面初建经 publishTruth 取得同一拍的真值列
@@ -127,7 +127,7 @@ public:
     // 云台 QML 官邸逐台登记；设备退场先断开当前采样链，再撤销借用。
     Q_INVOKABLE void addGimbal(QObject *object)
     {
-        auto *gimbal = dynamic_cast<GMBDeviceBase *>(object);
+        auto *gimbal = dynamic_cast<GMBFamily *>(object);
         if (!gimbal || std::ranges::any_of(mounts_, [&](const auto &m) { return &m.get() == gimbal; })) return;
         mounts_.emplace_back(*gimbal);
         if (object->objectName() == QStringLiteral("SimGimbal")) mount_ = static_cast<int>(mounts_.size()) - 1;
@@ -232,7 +232,7 @@ public Q_SLOTS:
             Q_EMIT this->logMessage(QStringLiteral("没有可架的转台，虚拟采集卡起不来"));
             return false;
         }
-        GMBDeviceBase &g = mounts_[mount_].get();
+        GMBFamily &g = mounts_[mount_].get();
         SimCardParams<SimSpectrumGenerator::Input> p;
         p.sourceKey = objectOf(g).objectName();
         p.capture = [this, &g](const RxTime begin, const RxTime end) -> std::optional<SimSamplingInput> {
@@ -341,7 +341,7 @@ private:
     }
 
     // [主] 后端由各自 QML 官邸直接拥有；只向自己的官邸请求数据，不接触云台图窗。
-    [[nodiscard]] WorldPoseHistory readAngles(GMBDeviceBase &g, const RxTime begin, const RxTime end) const
+    [[nodiscard]] WorldPoseHistory readAngles(GMBFamily &g, const RxTime begin, const RxTime end) const
     {
         Q_ASSERT(QThread::currentThread() == thread());
         QObject *const page = objectOf(g).parent();
@@ -356,7 +356,7 @@ private:
     }
 
     // 云台族基是纯 C++ 旁支；每台云台的唯一 QObject 来自其 Handle，同一对象内交叉转换必然成功。
-    [[nodiscard]] static QObject &objectOf(GMBDeviceBase &gimbal) { return dynamic_cast<QObject &>(gimbal); }
+    [[nodiscard]] static QObject &objectOf(GMBFamily &gimbal) { return dynamic_cast<QObject &>(gimbal); }
 
     // ── 可架的云台与选中项 ──
     Mounts mounts_;
