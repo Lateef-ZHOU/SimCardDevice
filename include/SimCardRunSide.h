@@ -65,12 +65,12 @@ struct SimCardChannelSpec
     static constexpr double frequencyStartMHz = 0.0, frequencyStepMHz = SimCardConfig::binMHz;
 };
 
-class SimCardCollector final : public DAQCollector
+class SimCardCollector final : public TypedDAQCollector<DAQChannel<SimCardChannelSpec>>
 {
 public:
     // 族模板层按已校验的请求参数直接构造完整实例；每次构造（含重试）获得新的请求身份。
     explicit SimCardCollector(const DAQParameters &parameters)
-        : DAQCollector(parameters) {}
+        : TypedDAQCollector(parameters) {}
     [[nodiscard]] QList<QByteArray> buildStart() const override
     {
         return {SimCardWire::encode(SimCardWire::Command{SimCardWire::Command::Accumulate, parameters.accumSec, requestId_})};
@@ -86,7 +86,7 @@ private:
 
     // 一包即一整帧：校验后去掉报头直接解析，无需攒缓冲。
     // 单路 SIM：与合成器同一组标定（频点 i 记作 i MHz、系数 freq2WsSlope，零多普勒在中心频点）。
-    std::optional<DAQChannels> assemble(QByteArrayView raw, RxTime at) override
+    std::optional<Frame> assemble(QByteArrayView raw, RxTime at) override
     {
         if (raw.size() != SimCardWire::headerBytes + SimCardConfig::frameBytes
             || qFromUnaligned<quint64>(raw.data()) != requestId_)
@@ -97,7 +97,7 @@ private:
         values.reserve(std::size_t(SimCardChannelSpec::rows) * SimCardChannelSpec::columns);
         for (qsizetype offset = 0; offset < frame.size(); offset += qsizetype(sizeof(quint16)))
             values.push_back(qFromUnaligned<quint16>(frame.constData() + offset));
-        return DAQChannels{std::make_shared<TypedDAQChannel<SimCardChannelSpec>>(std::move(values))};
+        return Frame{DAQChannel<SimCardChannelSpec>(std::move(values))};
     }
     inline static std::atomic<quint64> nextRequestId_{0};
     const quint64 requestId_ = ++nextRequestId_; // 每次创建（含重试）获得不同的请求身份。
