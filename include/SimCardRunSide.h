@@ -55,12 +55,22 @@ inline constexpr qsizetype frameBytes =
     static_cast<qsizetype>(geometry.row) * geometry.col * sizeof(quint16); // 一帧的字节数
 } // namespace SimCardConfig
 
+// 单路 SIM 规格：与合成器同一组标定（频点 i 记作 i MHz，零多普勒在中心频点）。
+struct SimCardChannelSpec
+{
+    static constexpr const char *name = "SIM";
+    static constexpr double wavelengthM = SimCardConfig::wavelengthM, zeroWindMHz = SimCardConfig::geometry.col / 2.0;
+    static constexpr int rows = SimCardConfig::geometry.row, columns = SimCardConfig::geometry.col;
+    static constexpr double rangeStartM = SimCardConfig::rangeStartM, rangeStepM = SimCardConfig::gateSpacingM;
+    static constexpr double frequencyStartMHz = 0.0, frequencyStepMHz = SimCardConfig::binMHz;
+};
+
 class SimCardCollector final : public DAQCollector
 {
 public:
     // 族模板层按已校验的请求参数直接构造完整实例；每次构造（含重试）获得新的请求身份。
     explicit SimCardCollector(const DAQParameters &parameters)
-        : DAQCollector(parameters, SimCardConfig::wavelengthM) {}
+        : DAQCollector(parameters) {}
     [[nodiscard]] QList<QByteArray> buildStart() const override
     {
         return {SimCardWire::encode(SimCardWire::Command{SimCardWire::Command::Accumulate, parameters.accumSec, requestId_})};
@@ -76,22 +86,18 @@ private:
 
     // 一包即一整帧：校验后去掉报头直接解析，无需攒缓冲。
     // 单路 SIM：与合成器同一组标定（频点 i 记作 i MHz、系数 freq2WsSlope，零多普勒在中心频点）。
-    std::optional<std::vector<DAQChannel>> assemble(QByteArrayView raw, RxTime at) override
+    std::optional<DAQChannels> assemble(QByteArrayView raw, RxTime at) override
     {
         if (raw.size() != SimCardWire::headerBytes + SimCardConfig::frameBytes
             || qFromUnaligned<quint64>(raw.data()) != requestId_)
             return std::nullopt; // 不完整报文或已取消/重试的旧请求：不认
         frameTime_ = at;
         const QByteArrayView frame = raw.sliced(SimCardWire::headerBytes);
-        const auto &geo = SimCardConfig::geometry;
-        LinearArray2D<double> spectrum(geo.row, geo.col, SimCardConfig::rangeStartM, SimCardConfig::gateSpacingM, 0.0,
-                                       SimCardConfig::binMHz);
-        spectrum.reserve(std::size_t(geo.row) * geo.col);
+        std::vector<double> values;
+        values.reserve(std::size_t(SimCardChannelSpec::rows) * SimCardChannelSpec::columns);
         for (qsizetype offset = 0; offset < frame.size(); offset += qsizetype(sizeof(quint16)))
-            spectrum.push_back(qFromUnaligned<quint16>(frame.constData() + offset));
-        std::vector<DAQChannel> channels;
-        channels.emplace_back(QStringLiteral("SIM"), std::move(spectrum), geo.col / 2.0, wavelengthM());
-        return channels;
+            values.push_back(qFromUnaligned<quint16>(frame.constData() + offset));
+        return DAQChannels{std::make_shared<TypedDAQChannel<SimCardChannelSpec>>(std::move(values))};
     }
     inline static std::atomic<quint64> nextRequestId_{0};
     const quint64 requestId_ = ++nextRequestId_; // 每次创建（含重试）获得不同的请求身份。
